@@ -497,7 +497,7 @@ const S={
   mode:'loading',            // loading | sync | local
   db:null,user:null,dl:null,me:null,canWrite:true,
   loaded:{c:false,r:false},
-  children:[],records:[],family:[],policies:[],insWho:'all',insOpen:'',mYear:'all',insStatBy:'policy',catLast:{},payTools:DEFAULT_TOOLS.slice(),lastTool:'',lastType:'',cfBuffer:3,cardState:{},cfShowPaid:false,accounts:[],flows:[],standing:[],cardAdj:[],lessons:[],lessonLogs:[],car:null,carPlan:null,carAsks:null,cardGroups:[],costMode:'actual',carLogs:[],carFuel:[],inCat:'',kidMoney:[],einvoiceWin:[],kmBonus:{enabled:true,threshold:100,bonus:5},kmKid:'',kmMonth:'',kmSources:KM_DEFAULT_SOURCES.slice(),lesDate:'',lesKid:'all',lesOpen:'',lesEnded:false,inAcct:'all',inLm:'',inRangeFrom:'',inRangeTo:'',inBm:'',inCard:'all',inBill:'',insQ:'',insSel:null,fsSel:null,fsSel2:null,kr:[],fr:[],budget:0,faCat:'',faChart:'',faEnd:'',fYear:'',
+  children:[],records:[],family:[],policies:[],insWho:'all',insOpen:'',mYear:'all',insStatBy:'policy',catLast:{},payTools:DEFAULT_TOOLS.slice(),lastTool:'',lastType:'',cfBuffer:3,cardState:{},cfShowPaid:false,accounts:[],flows:[],standing:[],cardAdj:[],lessons:[],lessonLogs:[],car:null,carPlan:null,carAsks:null,cardGroups:[],costMode:'actual',carLogs:[],carFuel:[],inCat:'',kidMoney:[],einvoiceWin:[],kmBonus:{enabled:true,threshold:100,bonus:5},kmKid:'',kmMonth:'',kmSources:KM_DEFAULT_SOURCES.slice(),lesDate:'',lesKid:'all',lesOpen:'',lesEnded:false,inAcct:'all',inLm:'',inRangeFrom:'',inRangeTo:'',inBm:'',importStatus:'',importReady:false,inCard:'all',inBill:'',insQ:'',insSel:null,fsSel:null,fsSel2:null,kr:[],fr:[],budget:0,faCat:'',faChart:'',faEnd:'',fYear:'',
   tab:'family',month:todayStr().slice(0,7),year:todayStr().slice(0,4),yKid:'all',yOpen:'',yPayer:'',yChild:'',yKC:'',yCat:'',yChart:'',oChart:'',oEnd:'',oKid:'',oKC:'',
   fKid:'all',fCat:'all',fStatus:'all',fPeriod:'month'
 };
@@ -791,6 +791,28 @@ async function setCardState(key,patch){
 async function putCfBuffer(n){
   if(S.mode==='sync'){await S.db.collection('settings').doc('cashflow').set({buffer:n});return}
   S.cfBuffer=n;persistLocal();render();
+}
+async function runImport(){
+  const data=window.__importData;
+  if(!data||S.mode!=='sync'||!S.db)return;
+  S.importReady=false;render();
+  const colls=Object.keys(data);
+  let done=0,total=0,failed=0;
+  colls.forEach(c=>{total+=Object.keys(data[c]||{}).length});
+  for(const coll of colls){
+    const docs=data[coll]||{};
+    for(const docId of Object.keys(docs)){
+      try{
+        await S.db.collection(coll).doc(docId).set(docs[docId]);
+        done++;
+      }catch(e){failed++}
+      S.importStatus='匯入中… '+done+'/'+total+(failed?'（'+failed+' 筆失敗）':'');
+      render();
+    }
+  }
+  S.importStatus='匯入完成：成功 '+done+' 筆'+(failed?'，失敗 '+failed+' 筆':'')+'。畫面應該會自動更新，如果沒有請重新整理頁面。';
+  window.__importData=null;render();
+  toast('匯入完成');
 }
 function bizBack(ds,n){
   let d=ds,k=0;
@@ -4533,7 +4555,15 @@ function openEinvoiceWinSheet(id){
 }
 
 function viewKids(){
-  let h='<section class="sec"><div class="sec-head"><h2>孩子</h2>'+(S.canWrite?'<button class="linkbtn" data-action="add-child">＋ 新增孩子</button>':'')+'</div>';
+  let h='';
+  if(S.mode==='sync'&&S.canWrite){
+    h+='<section class="sec" style="border-left:7px solid var(--warn)"><div class="sec-head"><h2>📥 從舊系統匯入資料</h2></div>'+
+      '<p class="msg">如果你是從 Claude 平台版本搬過來、這是第一次使用這個網址，可以在這裡把之前匯出的資料一次匯入。<b>建議只操作一次</b>，重複匯入同樣的檔案不會出錯，但如果家人已經開始在這裡記新的帳，請先確認不會蓋掉他們的資料（匯入是用原本的紀錄 ID 覆寫，同一筆會被舊資料蓋過去；新記錄不受影響）。</p>'+
+      '<div class="field"><label for="imp-file">匯入檔案（.json）</label><input type="file" id="imp-file" accept="application/json,.json"></div>'+
+      '<p class="hint" id="imp-status">'+esc(S.importStatus||'')+'</p>'+
+      '<div class="btnrow"><button type="button" class="btn primary" data-action="do-import" id="imp-go"'+(S.importReady?'':' disabled')+'>開始匯入</button></div></section>';
+  }
+  h+='<section class="sec"><div class="sec-head"><h2>孩子</h2>'+(S.canWrite?'<button class="linkbtn" data-action="add-child">＋ 新增孩子</button>':'')+'</div>';
   if(!S.children.length)h+='<p class="note">還沒有孩子。</p>';
   S.children.forEach(c=>{
     const n=S.records.filter(r=>r.childId===c.id).length;
@@ -5203,6 +5233,7 @@ document.addEventListener('click',e=>{
     case 'toggle-incat':S.inCat=S.inCat===t.dataset.cat?'':t.dataset.cat;render();break;
     case 'scan-inv':if(S.canWrite)openInvoiceScanSheet();break;
     case 'einv-edit':if(S.canWrite)openEinvoiceWinSheet(t.dataset.id||'');break;
+    case 'do-import':runImport();break;
     case 'car-cost-mode':S.costMode=t.dataset.mode==='nosub'?'nosub':'actual';render();break;
     case 'cardgroup-edit':if(S.canWrite)openCardGroupSheet(t.dataset.id||'');break;
     case 'car-cost-edit':if(S.canWrite)openCarCostSheet();break;
@@ -5266,6 +5297,24 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   if(e.target&&e.target.classList&&e.target.classList.contains('lesdate')){S.lesDate=(e.target.value&&e.target.value!==todayStr())?e.target.value:'';render();return}
   if(e.target&&e.target.id==='cf-buffer'){putCfBuffer(Math.max(0,Math.min(14,+e.target.value||0))).catch(err=>toast(errMsg(err)));return}
+  if(e.target&&e.target.id==='imp-file'){
+    const f=e.target.files&&e.target.files[0];
+    window.__importData=null;S.importReady=false;S.importStatus='';
+    if(!f){render();return}
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const data=JSON.parse(r.result);
+        let n=0;Object.keys(data).forEach(c=>{n+=Object.keys(data[c]||{}).length});
+        window.__importData=data;
+        S.importStatus='已讀取檔案，共 '+Object.keys(data).length+' 個分類、'+n+' 筆資料，按「開始匯入」寫入。';
+        S.importReady=true;
+      }catch(err){S.importStatus='這個檔案看起來不是有效的匯入檔（JSON 格式錯誤）。'}
+      render();
+    };
+    r.readAsText(f,'utf-8');
+    return;
+  }
   const t=e.target.closest('[data-filter]');
   if(t){S[t.dataset.filter]=t.value;render()}
 });
