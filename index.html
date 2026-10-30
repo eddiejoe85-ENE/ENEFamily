@@ -388,6 +388,7 @@ button{cursor:pointer}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script>
   window.__FIREBASE_CONFIG__ = {
     apiKey: "AIzaSyC1st3srXsZaeDMZqfGrlq8K8ZOSN4KmiE",
@@ -456,7 +457,7 @@ const NAV_GROUPS=[
   {id:'bank',tabs:[['cardflow','💳','信用卡&帳戶現金流'],['cardbills','🧾','信用卡帳款明細'],['income','💰','收入&銀行帳戶']]},
   {id:'kid',tabs:[['overview','🧒','小孩學雜費總覽'],['detail','📋','小孩學雜費明細'],['year','📅','小孩年度學雜費'],['lessons','🎨','才藝堂數'],['kidmoney','🐷','零用金點數']]},
   {id:'car',tabs:[['carplan','🛠️','汽車保養計劃'],['carlog','🧾','保養記錄'],['carfuel','⛽','加油與油耗'],['carcost','💰','擁車成本']]},
-  {id:'misc',tabs:[['insurance','🛡️','保險管理'],['advance','🏢','承益代墊']]},
+  {id:'misc',tabs:[['insurance','🛡️','保險管理'],['advance','🏢','淑芬代墊']]},
   {id:'sys',tabs:[['kids','⚙️','系統設定']]}
 ];
 const groupOfTab=t=>NAV_GROUPS.find(g=>g.tabs.some(x=>x[0]===t))||NAV_GROUPS[0];
@@ -872,7 +873,7 @@ async function hydrateNames(scope){
 /* ---------- views ---------- */
 function pagebar(){
   const m={
-    family:['fam','🏠','家庭支出'],famstat:['fam','🏠','家庭支出統計'],insurance:['ins','🛡️','保險管理'],major:['maj','⭐','重大事件'],cardflow:['card','💳','信用卡&帳戶現金流'],cardbills:['card','🧾','信用卡各月帳款明細'],income:['inc','💰','收入&銀行帳戶'],advance:['adv','🏢','承益代墊'],lessons:['les','🎨','才藝堂數'],kidmoney:['km','🐷','零用金與獎勵點數'],carplan:['car','🛠️','汽車保養計劃'],carlog:['car','🧾','汽車保養記錄'],carfuel:['car','⛽','加油與油耗'],carcost:['car','💰','擁車成本評估'],
+    family:['fam','🏠','家庭支出'],famstat:['fam','🏠','家庭支出統計'],insurance:['ins','🛡️','保險管理'],major:['maj','⭐','重大事件'],cardflow:['card','💳','信用卡&帳戶現金流'],cardbills:['card','🧾','信用卡各月帳款明細'],income:['inc','💰','收入&銀行帳戶'],advance:['adv','🏢','淑芬代墊'],lessons:['les','🎨','才藝堂數'],kidmoney:['km','🐷','零用金與獎勵點數'],carplan:['car','🛠️','汽車保養計劃'],carlog:['car','🧾','汽車保養記錄'],carfuel:['car','⛽','加油與油耗'],carcost:['car','💰','擁車成本評估'],
     overview:['kid','🧒','小孩學雜費總覽'],detail:['kid','🧒','小孩學雜費明細'],year:['kid','🧒','小孩年度學雜費'],
     kids:['sys','⚙️','系統設定']
   }[S.tab];
@@ -1230,16 +1231,16 @@ function famRow(r){
 }
 function advNote(r){
   if(!r.advance)return '';
-  return '<small style="color:'+(r.advStatus==='claimed'?'var(--ok)':'var(--warn)')+';font-weight:700">🏢 承益代墊・'+(r.advStatus==='claimed'?'已請款':'未請款')+'</small>';
+  return '<small style="color:'+(r.advStatus==='claimed'?'var(--ok)':'var(--warn)')+';font-weight:700">🏢 淑芬代墊・'+(r.advStatus==='claimed'?'已請款':'未請款')+'</small>';
 }
 function famAdvSection(ym){
   const list=S.family.filter(r=>r.advance&&ymOf(r.date)===ym).sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||0)-(a.createdAt||0));
   if(!list.length)return '';
   const pend=list.filter(r=>r.advStatus!=='claimed');
-  let h='<section class="sec"><div class="sec-head"><h2>🏢 承益代墊</h2><span class="meta">'+list.length+' 筆・'+money(sum(list,()=>true))+'</span></div>'+
+  let h='<section class="sec"><div class="sec-head"><h2>🏢 淑芬代墊</h2><span class="meta">'+list.length+' 筆・'+money(sum(list,()=>true))+'</span></div>'+
     '<p class="note" style="margin-top:0">這些是幫公司先付的錢，<b>不算在上面的家庭支出裡</b>，但付款用的信用卡或現金照常扣款。'+(pend.length?'還有 '+pend.length+' 筆沒請款（'+money(sum(pend,()=>true))+'）。':'這個月的代墊都已經請款了。')+'</p>';
   list.forEach(r=>{h+=famRow(r)});
-  return h+'<div class="btnrow"><button class="btn" data-action="tab" data-tab="advance">到「承益代墊」頁請款</button></div></section>';
+  return h+'<div class="btnrow"><button class="btn" data-action="tab" data-tab="advance">到「淑芬代墊」頁請款</button></div></section>';
 }
 /* ---------- 統一發票 QR Code 掃描 ---------- */
 function twInvoiceParse(text){
@@ -1459,13 +1460,13 @@ function futureSection(){
     const advSum=(g.items||[]).filter(it=>it.kind==='rec'&&it.r.advance&&it.r.status==='unpaid').reduce((a,it)=>a+it.amount,0);
     const rem=g.payable-advSum;
     if(rem<=0)return;
-    items.push({due:g.due,tag:'信用卡',title:g.name+' 帳款',sub:'共 '+g.n+' 筆'+(advSum>0?'（已扣掉承益代墊 '+money(advSum)+'）':'')+(g.creditApplied>0?'・已抵用前期溢繳 '+money(g.creditApplied):''),amount:rem,id:'',color:'var(--f-daily)'});
+    items.push({due:g.due,tag:'信用卡',title:g.name+' 帳款',sub:'共 '+g.n+' 筆'+(advSum>0?'（已扣掉淑芬代墊 '+money(advSum)+'）':'')+(g.creditApplied>0?'・已抵用前期溢繳 '+money(g.creditApplied):''),amount:rem,id:'',color:'var(--f-daily)'});
   });
   items.sort((a,b)=>a.due.localeCompare(b.due)||String(a.title).localeCompare(String(b.title)));
   const total=items.reduce((a,x)=>a+x.amount,0);
   let h='<section class="sec"><div class="sec-head"><h2>未來週期性待繳項目</h2><span class="meta">12 個月內・'+items.length+' 筆・'+money(total)+'</span></div>';
   if(!items.length)return h+'<p class="note" style="margin:0">目前沒有。記支出時選「每月固定的費用」，或到「保險管理」新增保單，未來要繳的款項就會列在這裡。</p></section>';
-  h+='<p class="meta" style="margin:0 0 4px">包含每月固定的待繳費用（電話費、瓦斯費等）、可跟承益請款的代墊項目（標🏢）、保險保費，以及信用卡帳款（已扣掉代墊部分）；一週內要繳的在上方顯示。</p>';
+  h+='<p class="meta" style="margin:0 0 4px">包含每月固定的待繳費用（電話費、瓦斯費等）、可跟淑芬請款的代墊項目（標🏢）、保險保費，以及信用卡帳款（已扣掉代墊部分）；一週內要繳的在上方顯示。</p>';
   let last='';
   items.forEach(x=>{
     const ym=x.due.slice(0,7);
@@ -2637,7 +2638,7 @@ function cfCardsSection(cards){
 function flowTitle(f){
   if(f.virtual)return '約定轉帳：'+f.note+(f.toId?'（'+placeLabel(f.fromId)+' → '+placeLabel(f.toId)+'）':'');
   if(f.type==='income')return (f.source||incCatName(f.category))+' 入帳';
-  if(f.type==='reimburse')return '承益企業報銷入帳';
+  if(f.type==='reimburse')return '淑芬企業報銷入帳';
   if(f.type==='transfer')return '轉帳 '+placeLabel(f.fromId)+' → '+placeLabel(f.toId);
   return f.note||'帳戶扣款';
 }
@@ -2719,7 +2720,7 @@ function ledgerRowInfo(x){
       sub=[incCatName(f.category),'入帳：'+placeLabel(f.toId),f.person,f.note].filter(Boolean).join('・');
       color='var(--ok)';
     }else if(f.type==='reimburse'){
-      title='承益企業報銷：'+(f.note||'代墊款');sub=['入帳：'+placeLabel(f.toId),'不算收入'].join('・');color='var(--ok)';
+      title='淑芬企業報銷：'+(f.note||'代墊款');sub=['入帳：'+placeLabel(f.toId),'不算收入'].join('・');color='var(--ok)';
     }else if(f.type==='transfer'){
       title='轉帳';sub=[placeLabel(f.fromId)+' → '+placeLabel(f.toId),f.note].filter(Boolean).join('・');color='var(--f-utility)';
     }else{
@@ -3043,8 +3044,8 @@ function billsSection(bm,followM){
   return h+'</section>';
 }
 
-/* ---------- company advance (承益企業代墊) ---------- */
-const COMPANY='承益企業';
+/* ---------- company advance (淑芬企業代墊) ---------- */
+const COMPANY='淑芬企業';
 const ADV_DOC={invoice:'🧾 有發票',receipt:'📄 有收據',none:'⚠ 沒有憑證'};
 function viewAdvance(){
   const today=todayStr();
@@ -3063,7 +3064,7 @@ function viewAdvance(){
     (S.canWrite?'<div class="btnrow"><button class="btn primary" data-action="add-adv">＋ 記代墊</button></div>':'')+
     '<p class="note">代墊是幫公司先付的錢，不算家庭支出，也不影響預算。付款用的現金、信用卡或帳戶照常扣款，請款入帳後再把錢加回你選的現金或帳戶，這筆錢也不算收入。</p></section>';
   h+='<section class="sec"><div class="sec-head"><h2>未請款</h2><span class="meta">'+pend.length+' 筆・'+money(pendTot)+'</span></div>';
-  if(!pend.length)h+='<p class="note" style="margin:0">目前沒有未請款的代墊。記支出時勾選「🏢 承益企業代墊」，或按上面的「＋ 記代墊」。</p>';
+  if(!pend.length)h+='<p class="note" style="margin:0">目前沒有未請款的代墊。記支出時勾選「🏢 淑芬代墊」，或按上面的「＋ 記代墊」。</p>';
   pend.forEach(r=>{
     const late=r.advExpected&&r.advExpected<today,days=late?daysBetween(r.advExpected,today):0;
     const tag=late?'<span class="stamp late">逾期 '+days+' 天</span>':(r.advExpected?'<span class="stamp wait">預計 '+mdLabel(r.advExpected)+'</span>':'');
@@ -3706,7 +3707,7 @@ const CAR_DEFAULT_PLAN=[
   {key:'warranty',name:'保固到期前全車健檢',km:0,months:0,dueDate:'2027-02-20',cost:'',enabled:true,note:'新車保固大約是 4 年或 12 萬 km（請以保固手冊為準）。這台約在 2027/03/20 到期，到期前一個月回原廠做全車檢查，能在保固內處理的問題就趁現在處理。'},
   {key:'tax',name:'使用牌照稅',km:0,months:12,dueDate:'2027-04-30',cost:11230,enabled:true,note:'每年 4/1 開徵，牌照稅 11,230 元，4 月底前繳納。'},
   {key:'fuelfee',name:'燃料使用費',km:0,months:12,dueDate:'2027-07-01',cost:6180,enabled:true,note:'每年 7/1 開徵，燃料使用費 6,180 元，實際繳費期限請看通知單。'},
-  {key:'carins',name:'車險續保（強制險＋任意險）',km:0,months:12,dueDate:'2027-03-01',cost:10000,enabled:true,note:'車險由承益企業補助，憑發票請款。每年 3 月續保，續保日期請以保單為準；續保後在「記錄完成」記下日期，就會排下一年的提醒。'},
+  {key:'carins',name:'車險續保（強制險＋任意險）',km:0,months:12,dueDate:'2027-03-01',cost:10000,enabled:true,note:'車險由淑芬企業補助，憑發票請款。每年 3 月續保，續保日期請以保單為準；續保後在「記錄完成」記下日期，就會排下一年的提醒。'},
   {key:'inspect',name:'汽車定期檢驗（驗車）',km:0,months:12,dueDate:'2028-04-01',cost:'',enabled:true,note:'自用小客車出廠未滿 5 年免驗，5 年以上未滿 10 年每年 1 次，10 年以上每年 2 次。實際日期請看行照上的「指定檢驗日期」，前後一個月內都可以驗。'}
 ];
 const carInfo=()=>Object.assign({},CAR_DEFAULT,S.car||{});
@@ -3904,7 +3905,7 @@ function viewCarCost(){
     L('平均每公里',('NT$ '+selfKm.toFixed(1))+(S1?'（含折舊，不含公司補助的部分）':'（只算運轉、不含折舊：NT$ '+(k.odo>0?k.running/k.odo:0).toFixed(1)+'）'))+
     L('已擁有',Math.floor(k.months/12)+' 年 '+Math.round(k.months%12)+' 個月・'+num(k.odo)+' km')+
     L(S1?'你自己負擔的累計淨成本':'累計實際淨成本',money(self))+
-    (S1?L('這台車的總成本（含公司補助的部分）','每月 '+money(k.net/k.months)+'・每公里 NT$ '+allKm.toFixed(1)+'・累計 '+money(k.net))+L('承益企業補助（'+[k.subFM?'油費、保養':'',k.subTax?'稅費':'',k.subIns?'車險':'',k.subPark?'停車、過路費':''].filter(Boolean).join('、')+'）',money(k.subTo),'color:var(--ok);font-weight:700'):'')+
+    (S1?L('這台車的總成本（含公司補助的部分）','每月 '+money(k.net/k.months)+'・每公里 NT$ '+allKm.toFixed(1)+'・累計 '+money(k.net))+L('淑芬企業補助（'+[k.subFM?'油費、保養':'',k.subTax?'稅費':'',k.subIns?'車險':'',k.subPark?'停車、過路費':''].filter(Boolean).join('、')+'）',money(k.subTo),'color:var(--ok);font-weight:700'):'')+
     '<p class="note">淨成本＝購車與加裝的錢，扣掉現在把車賣掉能拿回的錢（殘值），再加上這幾年花的稅費、保險、停車等運轉成本'+(S1?'。公司補助的部分（'+[k.subFM?'油費、保養':'',k.subTax?'牌照稅、燃料使用費':'',k.subIns?'車險':'',k.subPark?'停車、過路費':''].filter(Boolean).join('、')+'）不算你自己的負擔':'，以及油錢和保養')+'。</p></section>';
   h+='<section class="sec"><div class="sec-head"><h2>成本拆解</h2><span class="meta">到今天累計</span></div>'+
     L('購車價',money(k.price))+L('加裝（鍍膜、隔熱紙…）',money(k.acc))+
@@ -3916,7 +3917,7 @@ function viewCarCost(){
     L('車險'+(k.subIns?'（公司補助）':''),k.insYear>0?'約 '+money(k.insTot)+'（每年 '+money(k.insYear)+'）':'尚未填寫',k.insYear>0?(k.subIns?'color:var(--muted)':''):'color:var(--warn);font-weight:700')+
     L('停車、過路費'+(k.subPark?'（公司補助）':''),k.parkToll>0?'約 '+money(k.parkToll*k.months)+'（每月 '+money(k.parkToll)+'）':'尚未填寫',k.parkToll>0?(k.subPark?'color:var(--muted)':''):(k.subPark?'color:var(--muted)':'color:var(--warn);font-weight:700'))+
     L('洗車、其他',k.otherM>0?'約 '+money(k.otherM*k.months)+'（每月 '+money(k.otherM)+'）':'尚未填寫')+
-    (S1?L('總成本（含公司補助）',money(k.net))+L('承益企業補助','－'+money(k.subTo),'color:var(--ok);font-weight:700'):'')+
+    (S1?L('總成本（含公司補助）',money(k.net))+L('淑芬企業補助','－'+money(k.subTo),'color:var(--ok);font-weight:700'):'')+
     T(S1?'你自己負擔的累計淨成本':'累計實際淨成本',money(self),true)+'</section>';
   const fuelY=k.rate*365/k.cons*k.unitPrice,maintY=k.years>0?k.maintTot/k.years:0;
   const yearItems=[['燃料費（一年約 '+num(k.rate*365)+' km）',fuelY,k.subFM],['保養與維修（平均）',maintY,k.subFM],['牌照稅＋燃料使用費',k.taxYear,k.subTax],['車險',k.insYear,k.subIns],['停車、過路費',k.parkToll*12,k.subPark],['洗車、其他',k.otherM*12,false]];
@@ -3941,7 +3942,7 @@ function viewCarCost(){
   if(!(k.insYear>0))gaps.push('車險：到「編輯成本資料」填每年保費，或到「保險管理」新增車險保單');
   if(!(k.parkToll>0))gaps.push('停車、過路費（台北⇄台中）每月大約多少：'+(k.subPark?'公司有補助，不影響你自己的負擔，只影響這台車的總成本':'填上去成本才會完整'));
   if(!S1&&k.fuelRec<k.fuelTot*0.5)gaps.push('加油：目前只記錄了很少幾筆，其餘是估算。之後每次加油都記，油錢和油耗就會越來越準');
-  if(S1)gaps.push('請款要憑發票：加油、保養記得索取發票。記加油、保養時選「由承益企業補助」，就會記成承益代墊，到「承益代墊」頁逐筆請款入帳');
+  if(S1)gaps.push('請款要憑發票：加油、保養記得索取發票。記加油、保養時選「由淑芬企業補助」，就會記成淑芬代墊，到「淑芬代墊」頁逐筆請款入帳');
   if(!S1&&k.noCost.length)gaps.push('保養計劃裡這些項目還沒填預估費用，10 年成本會偏低：'+k.noCost.slice(0,8).join('、')+(k.noCost.length>8?'…':''));
   if(k.resNowAssumed||k.res10Assumed)gaps.push('殘值目前是預設值，請依你對行情的判斷調整');
   if(gaps.length)h+='<section class="sec"><div class="sec-head"><h2>還缺哪些資料、提醒</h2></div><ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.7">'+gaps.map(g=>'<li>'+esc(g)+'</li>').join('')+'</ul></section>';
@@ -3985,8 +3986,8 @@ function openCarCostSheet(){
     '<div class="field"><span class="lab">每年、每月的其他花費</span></div>'+
     '<div class="two">'+inp('cc-ins','insuranceYear','車險每年（強制險＋任意險）',c.insuranceYear)+inp('cc-pk','parkingMonth','停車每月（公司補助的也填）',c.parkingMonth)+'</div>'+
     '<div class="two">'+inp('cc-tl','tollMonth','過路費每月（含台北⇄台中）',c.tollMonth)+inp('cc-ot','otherMonth','洗車、其他每月（自己負擔）',c.otherMonth)+'</div>'+
-    '<div class="field"><span class="lab">承益企業補助哪些（憑發票請款）</span>'+
-    '<label class="chk"><input type="checkbox" name="companyPaid" value="1"'+(c.companyPaid!==false?' checked':'')+'><span>油費和保養<small>記加油、保養時預設記成承益代墊</small></span></label>'+
+    '<div class="field"><span class="lab">淑芬企業補助哪些（憑發票請款）</span>'+
+    '<label class="chk"><input type="checkbox" name="companyPaid" value="1"'+(c.companyPaid!==false?' checked':'')+'><span>油費和保養<small>記加油、保養時預設記成淑芬代墊</small></span></label>'+
     '<label class="chk" style="margin-top:6px"><input type="checkbox" name="subsidyTax" value="1"'+(c.subsidyTax?' checked':'')+'><span>牌照稅、燃料使用費</span></label>'+
     '<label class="chk" style="margin-top:6px"><input type="checkbox" name="subsidyIns" value="1"'+(c.subsidyIns?' checked':'')+'><span>車險</span></label>'+
     '<label class="chk" style="margin-top:6px"><input type="checkbox" name="subsidyPark" value="1"'+(c.subsidyPark?' checked':'')+'><span>停車費、過路費</span></label></div>'+
@@ -4250,7 +4251,7 @@ function viewCarFuel(){
 /* ---- sheets ---- */
 function carSubsidyBlock(){
   const on=carInfo().companyPaid!==false;
-  return '<label class="chk" style="margin-top:8px"><input type="checkbox" name="subsidy" value="1"'+(on?' checked':'')+'><span>由承益企業補助<small>憑發票請款，記得索取發票。記成「承益代墊」：不算家庭支出，之後到「承益代墊」頁請款入帳</small></span></label>'+
+  return '<label class="chk" style="margin-top:8px"><input type="checkbox" name="subsidy" value="1"'+(on?' checked':'')+'><span>由淑芬企業補助<small>憑發票請款，記得索取發票。記成「淑芬代墊」：不算家庭支出，之後到「淑芬代墊」頁請款入帳</small></span></label>'+
     '<div class="chips" style="margin-top:6px">'+[['invoice','🧾 有發票'],['receipt','📄 有收據'],['none','⚠ 沒有']].map((x,i)=>'<label class="chip"><input type="radio" name="advDoc" value="'+x[0]+'"'+(i===0?' checked':'')+'><span>'+x[1]+'</span></label>').join('')+'</div>';
 }
 function carPayName(id){
@@ -4396,7 +4397,7 @@ function openCarLogSheet(l,pre){
         if(tq)meas.tread=tq;if(pq)meas.pad=pq;if(fv('kpa'))meas.kpa=fv('kpa');if(fv('cca'))meas.cca=fv('cca');
         await put('carlogs',{id:isNew?newId('cl'):l.id,date:date,odo:odo,items:items,title:title,measures:Object.keys(meas).length?meas:null,place:String(fd.get('place')||'').trim(),cost:cost||null,doc:!!fd.get('doc'),note:String(fd.get('note')||'').trim(),expId:expId,createdBy:isNew?me:(l.createdBy||me),createdAt:isNew?Date.now():(l.createdAt||Date.now())});
         if(odo>carOdoNow())await putCar(Object.assign({},carInfo(),{odo:odo,odoDate:date}));
-        closeSheet();toast(isNew?'已記錄保養'+(expId?(fd.get('subsidy')?'，並記成承益代墊':'，並記到家庭支出'):''):'已更新');
+        closeSheet();toast(isNew?'已記錄保養'+(expId?(fd.get('subsidy')?'，並記成淑芬代墊':'，並記到家庭支出'):''):'已更新');
       }catch(er){btn.disabled=false;btn.textContent='儲存';toast(errMsg(er))}
     });
     const dl=$('#cl-del',sh);
@@ -4447,7 +4448,7 @@ function openCarFuelSheet(f){
         const rb=Number(fd.get('rangeBefore'))||null,ra=Number(fd.get('rangeAfter'))||null;
         await put('carfuel',{id:isNew?newId('cf'):f.id,date:date,odo:odo,liters:liters,amount:amount,rangeBefore:rb,rangeAfter:ra,postDate:(fd.get('postDate')&&carToolIsCredit(fd.get('tool')))?fd.get('postDate'):null,voucher:(Number(fd.get('voucher'))>0?Number(fd.get('voucher')):null),payToolId:fd.get('tool')||null,payToolName:carPayName(fd.get('tool'))||null,full:!!fd.get('full'),fuel:fd.get('fuel')||'95',trip:fd.get('trip')||'mixed',station:String(fd.get('station')||'').trim(),note:String(fd.get('note')||'').trim(),expId:expId,createdBy:isNew?me:(f.createdBy||me),createdAt:isNew?Date.now():(f.createdAt||Date.now())});
         if(odo>carOdoNow())await putCar(Object.assign({},carInfo(),{odo:odo,odoDate:date}));
-        closeSheet();toast(isNew?'已記錄加油'+(expId?(fd.get('subsidy')?'，並記成承益代墊':'，並記到家庭支出'):''):'已更新');
+        closeSheet();toast(isNew?'已記錄加油'+(expId?(fd.get('subsidy')?'，並記成淑芬代墊':'，並記到家庭支出'):''):'已更新');
       }catch(er){btn.disabled=false;btn.textContent='儲存';toast(errMsg(er))}
     });
     const dl=$('#cf-del',sh);
@@ -4556,6 +4557,9 @@ function openEinvoiceWinSheet(id){
 
 function viewKids(){
   let h='';
+  if(S.authUser){
+    h+='<section class="sec"><div class="sec-head"><h2>帳號</h2></div><p class="msg" style="margin:0 0 8px">目前登入：'+esc(S.authUser.email||'')+'</p><div class="btnrow"><button class="btn" data-action="sign-out">登出</button></div></section>';
+  }
   if(S.mode==='sync'&&S.canWrite){
     h+='<section class="sec" style="border-left:7px solid var(--warn)"><div class="sec-head"><h2>📥 從舊系統匯入資料</h2></div>'+
       '<p class="msg">如果你是從 Claude 平台版本搬過來、這是第一次使用這個網址，可以在這裡把之前匯出的資料一次匯入。<b>建議只操作一次</b>，重複匯入同樣的檔案不會出錯，但如果家人已經開始在這裡記新的帳，請先確認不會蓋掉他們的資料（匯入是用原本的紀錄 ID 覆寫，同一筆會被舊資料蓋過去；新記錄不受影響）。</p>'+
@@ -4727,7 +4731,7 @@ function openRecordSheet(rec,kindArg,pre){
   '<div class="field"><span class="lab">類別</span><div class="chips">'+catChips+'</div></div>'+
   (fam?'<div class="field" id="kidcat-block"'+(LINK[r.category]?'':' hidden')+'><span class="lab">小孩學雜費類別</span><div class="chips">'+CATS.map(c=>'<label class="chip"><input type="radio" name="kidcat" value="'+c.id+'"'+(c.id===(r.kidCat||'other')?' checked':'')+'><span><i class="sw" style="background:var(--c-'+c.id+');border-radius:2px"></i>'+c.name+'</span></label>').join('')+'</div><p class="hint">選了唯榕或薇棠，這筆也會算進他的小孩學雜費，請選它屬於哪一類。</p></div>':'')+
   '<div class="field"><label class="chk"><input type="checkbox" name="major" value="1"'+(r.major?' checked':'')+'><span>⭐ 重大事件<small>'+(fam?'買房、結婚、生產、大型醫療…':'入學、升學、留學、大額才藝器材…')+'會集中列在「重大事件」頁</small></span></label></div>'+
-  (fam?'<div class="field"><label class="chk"><input type="checkbox" name="adv" value="1"'+(r.advance?' checked':'')+'><span>🏢 承益企業代墊<small>幫公司先付的錢，不算家庭支出，之後向公司請款</small></span></label></div><div id="adv-block"'+(r.advance?'':' hidden')+'><div class="field"><span class="lab">憑證</span><div class="chips">'+[['invoice','🧾 有發票'],['receipt','📄 有收據'],['none','⚠ 沒有']].map(x=>'<label class="chip"><input type="radio" name="advDoc" value="'+x[0]+'"'+((r.advDoc||'invoice')===x[0]?' checked':'')+'><span>'+x[1]+'</span></label>').join('')+'</div></div><div class="field"><label for="f-advexp">預計入帳日（選填）</label><input type="date" id="f-advexp" name="advExpected" value="'+esc(r.advExpected||'')+'">'+((r.advance&&r.advStatus==="claimed")?'<p class="hint" style="color:var(--ok);font-weight:700">已請款，'+esc(r.advClaimDate||'')+' 入帳到「'+esc(placeLabel(r.advToId))+'」。要改金額或取消代墊，請先到「承益代墊」頁取消請款。</p>':'')+'</div></div>':'')+
+  (fam?'<div class="field"><label class="chk"><input type="checkbox" name="adv" value="1"'+(r.advance?' checked':'')+'><span>🏢 淑芬代墊<small>幫公司先付的錢，不算家庭支出，之後向公司請款</small></span></label></div><div id="adv-block"'+(r.advance?'':' hidden')+'><div class="field"><span class="lab">憑證</span><div class="chips">'+[['invoice','🧾 有發票'],['receipt','📄 有收據'],['none','⚠ 沒有']].map(x=>'<label class="chip"><input type="radio" name="advDoc" value="'+x[0]+'"'+((r.advDoc||'invoice')===x[0]?' checked':'')+'><span>'+x[1]+'</span></label>').join('')+'</div></div><div class="field"><label for="f-advexp">預計入帳日（選填）</label><input type="date" id="f-advexp" name="advExpected" value="'+esc(r.advExpected||'')+'">'+((r.advance&&r.advStatus==="claimed")?'<p class="hint" style="color:var(--ok);font-weight:700">已請款，'+esc(r.advClaimDate||'')+' 入帳到「'+esc(placeLabel(r.advToId))+'」。要改金額或取消代墊，請先到「淑芬代墊」頁取消請款。</p>':'')+'</div></div>':'')+
   '<div class="field"><label for="f-title">項目名稱</label><input type="text" id="f-title" name="title" required maxlength="40" placeholder="'+(fam?'例：9月房貸、全聯採買、電費':'例：9月學費、數學班第二期')+'" value="'+esc(r.title)+'"></div>'+
   '<div class="field"><label for="f-org">'+(fam?'店家／對象':'學校／補習班')+'</label><input type="text" id="f-org" name="org" list="dl-org" maxlength="40" placeholder="'+(fam?'例：全聯、台電':'例：小太陽幼兒園')+'" value="'+esc(r.org)+'"><datalist id="dl-org">'+orgs.map(o=>'<option value="'+esc(o)+'">').join('')+'</datalist></div>'+
   (fam?'<div class="field"><label for="f-einv">統一發票號碼（選填）</label><input type="text" id="f-einv" name="einvoiceNo" maxlength="12" placeholder="例：AB12345678" style="text-transform:uppercase" value="'+esc(r.einvoiceNo||'')+'"><p class="hint">填了就能到「統一發票對獎」自動比對這期中獎號碼。用「📷 掃發票」記帳會自動帶入。</p></div>':'')+
@@ -4931,7 +4935,7 @@ function openRecordSheet(rec,kindArg,pre){
       const dueRaw=status==='unpaid'?(fd.get('due')||date):null;
       const extra=isNew?(+fd.get('repeat')||0):0;
       const advOn=fam&&!!fd.get('adv');
-      if(rec&&rec.advance&&rec.advStatus==='claimed'&&(!advOn||amount!==+rec.amount)){toast('已請款的項目，要改金額或取消代墊，請先到「承益代墊」頁取消請款');return}
+      if(rec&&rec.advance&&rec.advStatus==='claimed'&&(!advOn||amount!==+rec.amount)){toast('已請款的項目，要改金額或取消代墊，請先到「淑芬代墊」頁取消請款');return}
       const ptype=fd.get('ptype')||'other';
       const ptId=fd.get('ptool')||'',ptl=toolList.find(t=>t.id===ptId),ptNm=ptl?toolLabel(ptl):'';
       const pClose=fd.get('payClose')||'',pDue=fd.get('payDue')||'';
@@ -5234,6 +5238,7 @@ document.addEventListener('click',e=>{
     case 'scan-inv':if(S.canWrite)openInvoiceScanSheet();break;
     case 'einv-edit':if(S.canWrite)openEinvoiceWinSheet(t.dataset.id||'');break;
     case 'do-import':runImport();break;
+    case 'sign-out':if(window.firebase&&firebase.auth)firebase.auth().signOut();break;
     case 'car-cost-mode':S.costMode=t.dataset.mode==='nosub'?'nosub':'actual';render();break;
     case 'cardgroup-edit':if(S.canWrite)openCardGroupSheet(t.dataset.id||'');break;
     case 'car-cost-edit':if(S.canWrite)openCarCostSheet();break;
@@ -5331,19 +5336,42 @@ document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&t&&t.getAttribute&&t.getAttribute('role')==='button'&&t.dataset&&t.dataset.action){e.preventDefault();t.dispatchEvent(new MouseEvent('click',{bubbles:true}))}
 });
 
+/* ---------- 登入畫面 ---------- */
+function renderLoginScreen(errMsgText){
+  const app=document.getElementById('app');
+  app.innerHTML=
+    '<div style="max-width:360px;margin:15vh auto 0;padding:24px 20px;text-align:center">'+
+    '<div style="font-size:40px;margin-bottom:8px">🎒</div>'+
+    '<h1 style="font-size:20px;margin:0 0 20px">E&amp;E家庭帳本</h1>'+
+    '<form id="login-form" autocomplete="on">'+
+    '<div class="field" style="text-align:left"><label for="li-email">電子郵件</label><input type="email" id="li-email" name="email" required autocomplete="username"></div>'+
+    '<div class="field" style="text-align:left"><label for="li-pw">密碼</label><input type="password" id="li-pw" name="password" required autocomplete="current-password"></div>'+
+    (errMsgText?'<p class="hint" style="color:var(--bad)">'+errMsgText+'</p>':'')+
+    '<button type="submit" class="btn primary grow" style="width:100%;margin-top:8px">登入</button>'+
+    '</form>'+
+    '<p class="hint" style="margin-top:16px">帳號由家庭管理員在 Firebase Console 建立，沒有帳號請跟管理員要。</p>'+
+    '</div>';
+  document.getElementById('login-form').addEventListener('submit',async ev=>{
+    ev.preventDefault();
+    const email=document.getElementById('li-email').value.trim(),pw=document.getElementById('li-pw').value;
+    const btn=ev.target.querySelector('button[type=submit]');
+    btn.disabled=true;btn.textContent='登入中…';
+    try{
+      await firebase.auth().signInWithEmailAndPassword(email,pw);
+    }catch(e){
+      const msgs={'auth/invalid-email':'電子郵件格式不對','auth/user-not-found':'查無這個帳號','auth/wrong-password':'密碼不對','auth/invalid-credential':'帳號或密碼不對','auth/too-many-requests':'嘗試太多次，請稍後再試','auth/user-disabled':'這個帳號已被停用'};
+      renderLoginScreen(msgs[e.code]||'登入失敗，請再試一次');
+    }
+  });
+}
 /* ---------- init ---------- */
 (async function init(){
-  render();
-  let db=null,user=null,dl=null;
+  let db=null,user=null,dl=null,auth=null;
   try{
     if(window.firebase&&window.__FIREBASE_CONFIG__){
       firebase.initializeApp(window.__FIREBASE_CONFIG__);
       db=firebase.firestore();
-      // 簡易身分：只存在這台裝置的瀏覽器裡，用來標記「誰記的」，不是帳號登入
-      let myId=localStorage.getItem('kidledger:myid'),myName=localStorage.getItem('kidledger:myname');
-      if(!myId){myId='u_'+Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('kidledger:myid',myId)}
-      if(!myName){myName=prompt('第一次使用，請輸入你的稱呼（例如：爸爸、媽媽），之後不會再問')||'家人';localStorage.setItem('kidledger:myname',myName)}
-      user={me:async()=>({id:myId,name:myName}),can:async()=>true};
+      auth=firebase.auth();
       dl={save:async o=>{
         const blob=new Blob([o.data],{type:'text/csv;charset=utf-8'});
         const url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -5352,11 +5380,20 @@ document.addEventListener('keydown',e=>{
       }};
     }
   }catch(e){console.error('Firebase 初始化失敗',e)}
-  S.user=user;S.dl=dl;
-  if(user){
+  if(!auth){render();return}
+  renderLoginScreen();
+  auth.onAuthStateChanged(async fbUser=>{
+    if(!fbUser){renderLoginScreen();return}
+    user={me:async()=>({id:fbUser.uid,name:(fbUser.email||'').split('@')[0]||'家人'}),can:async()=>true};
+    S.user=user;S.dl=dl;S.authUser={email:fbUser.email,uid:fbUser.uid};
     try{S.me=await user.me()}catch(e){}
     try{S.canWrite=(await user.can('data.write'))!==false}catch(e){}
-  }
+    render();
+    startSync(db);
+  });
+})();
+async function startSync(db){
+  if(S.mode==='sync')return; // 避免重複掛監聽（例如 token 自動刷新再觸發一次 onAuthStateChanged）
   if(db){
     S.db=db;S.mode='sync';
     const toList=snap=>snap.docs.map(d=>Object.assign({id:d.id},d.data()));
@@ -5418,7 +5455,7 @@ document.addEventListener('keydown',e=>{
   }else{
     S.mode='local';loadLocal();render();
   }
-})();
+}
 })();
 </script>
 </body>
